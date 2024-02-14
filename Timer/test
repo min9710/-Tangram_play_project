@@ -1,1 +1,60 @@
+import sys
+from PyQt5.QtWidgets import *
+from PyQt5 import uic
+import threading
+import time
 
+form_class = uic.loadUiType("Tangram.ui")[0]
+
+
+class Timer:
+    def __init__(self, interval, callback):
+        self.interval = interval
+        self.callback = callback
+        self.is_running = False
+        self.thread = None
+
+    def start(self):
+        if not self.is_running:
+            self.is_running = True
+            self.thread = threading.Thread(target=self._run)
+            self.thread.start()
+
+    def stop(self):
+        self.is_running = False
+
+    def _run(self):
+        count = self.interval
+        while count >= 0:
+            self.callback(count)
+            time.sleep(1)
+            count -= 1
+
+class WindowClass(QMainWindow, form_class) :
+    def __init__(self) :
+        super().__init__()
+        self.setupUi(self)
+        
+        
+        
+        #define function
+        self.exitBtn.clicked.connect(self.exitBtnFuction)
+        
+    #function
+    def exitBtnFuction(self):
+        print("exit clicked")
+        
+        #timer
+        self.timer = Timer(interval=10, callback=self.countdown_callback)
+        self.timer.start()
+    
+    def countdown_callback(self, count):
+        print(count)
+
+if __name__ == "__main__" :
+    app = QApplication(sys.argv) 
+
+    myWindow = WindowClass() 
+    myWindow.show()
+
+    app.exec_()
