@@ -6,26 +6,26 @@ import numpy as np
 class Video(QMainWindow):
     def __init__(self) :
         super().__init__()
-        self.setWindowTitle('비디오에서 프레임 수집')	# 윈도우 이름과 위치 지정
+        self.setWindowTitle('비디오에서 프레임 수집')
         self.setGeometry(200,200,500,100)
 
-        videoButton=QPushButton('비디오 켜기',self)	# 버튼 생성
+        videoButton=QPushButton('비디오 켜기',self)	
         captureButton=QPushButton('프레임 잡기',self)
-        saveButton=QPushButton('프레임 저장',self)
+        matchButton=QPushButton('매칭',self)
         quitButton=QPushButton('나가기',self)
         
-        videoButton.setGeometry(10,10,100,30)		# 버튼 위치와 크기 지정
+        videoButton.setGeometry(10,10,100,30)		
         captureButton.setGeometry(110,10,100,30)
-        saveButton.setGeometry(210,10,100,30)
+        matchButton.setGeometry(210,10,100,30)
         quitButton.setGeometry(310,10,100,30)
         
-        videoButton.clicked.connect(self.videoFunction) # 콜백 함수 지정
+        videoButton.clicked.connect(self.videoFunction) 
         captureButton.clicked.connect(self.captureFunction)         
-        saveButton.clicked.connect(self.saveFunction)
+        matchButton.clicked.connect(self.matchFunction)
         quitButton.clicked.connect(self.quitFunction)
        
     def videoFunction(self):
-        self.cap=cv.VideoCapture(0,cv.CAP_DSHOW)	# 카메라와 연결 시도
+        self.cap=cv.VideoCapture(0,cv.CAP_DSHOW)
         if not self.cap.isOpened(): self.close()
             
         while True:
@@ -34,20 +34,19 @@ class Video(QMainWindow):
             cv.imshow('video display',self.frame)
             cv.waitKey(1)
         
-    def captureFunction(self): # 프레임 잡기
+    def captureFunction(self): # 카운트 다운 끝나면 프레임 잡으면 될 듯
         self.capturedFrame=self.frame
         cv.imshow('Captured Frame',self.capturedFrame)
         
-    def saveFunction(self):				# 파일 저장
-        img1=cv.imread('a.png') # 버스를 크롭하여 모델 영상으로 사용
+    def matchFunction(self):		
+        img1=cv.imread('a.png') # 도안
         gray1=cv.cvtColor(img1,cv.COLOR_BGR2GRAY)
-        img2=self.capturedFrame			     # 장면 영상
+        img2=self.capturedFrame # 타이머 끝났을 떄 프레임
         gray2=cv.cvtColor(img2,cv.COLOR_BGR2GRAY)
 
         sift=cv.SIFT_create()
         kp1,des1=sift.detectAndCompute(gray1,None)
         kp2,des2=sift.detectAndCompute(gray2,None)
-        print('특징점 개수:',len(kp1),len(kp2)) 
 
         flann_matcher=cv.DescriptorMatcher_create(cv.DescriptorMatcher_FLANNBASED)
         knn_match=flann_matcher.knnMatch(des1,des2,2)
@@ -64,7 +63,7 @@ class Video(QMainWindow):
         cv.imshow('Good Matches', img_match)
         
     def quitFunction(self):
-        self.cap.release()				# 카메라와 연결을 끊음
+        self.cap.release()
         cv.destroyAllWindows()
         self.close()
                 
