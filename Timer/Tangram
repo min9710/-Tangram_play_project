@@ -18,7 +18,7 @@ import random
 
 
 form_class = uic.loadUiType("D:/code/python/Tangram/-Tangram_play_project/Timer/Tangram.ui")[0]
-img_dir = "D:/code/python/Tangram/-Tangram_play_project/dataset/tangramplay/"
+img_dir = 'D:/code/python/Tangram/-Tangram_play_project/dataset/tangramplay/'
 
 class Timer:
     def __init__(self, interval, callback):
