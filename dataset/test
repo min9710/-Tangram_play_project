@@ -6,21 +6,23 @@ import cv2 as cv
 import numpy as np
 import random, os, sys
 
-class ModelWindow(QWidget):
-    def __init__(self, model_img):
+class ModelWindow(QWidget): # 모델 표시하는 창을 위해서 사용
+    def __init__(self, model_img): # model_img를 받아서 img 표시
         super().__init__()
         self.setWindowTitle("모델 이미지")
         self.setGeometry(200, 200, 400, 400)
 
-        label = QLabel(self)
+        label = QLabel(self) # 매칭 결과 label
         pixmap = QPixmap(model_img)
+
+        self.match_label = QLabel() # 매칭 결과 QLabel
         label.setPixmap(pixmap)
         label.setAlignment(Qt.AlignCenter)
-
+        
 class Video(QMainWindow):
     def __init__(self) :
         super().__init__()
-        self.setWindowTitle("비교")
+        self.setWindowTitle("Tangramplay")
         self.setGeometry(200,200,500,100)
 
         videoButton=QPushButton("ON",self)    
@@ -28,8 +30,8 @@ class Video(QMainWindow):
         matchButton=QPushButton("매칭",self)
         quitButton=QPushButton("나가기",self)
         
-        videoButton.setGeometry(10,10,100,30)        
-        captureButton.setGeometry(110,10,100,30)
+        videoButton.setGeometry(110,10,100,30)      
+        captureButton.setGeometry(10,10,100,30)
         matchButton.setGeometry(210,10,100,30)
         quitButton.setGeometry(310,10,100,30)
         
@@ -40,18 +42,26 @@ class Video(QMainWindow):
         
         self.image_folder_path = "D:/python_workspace/tangramplay"
 
-        self.load_images()
+        self.load_img()
 
         self.model_window = None
+        self.sift = cv.xfeatures2d.SIFT_create()
 
-    def load_images(self):
-        self.template_images = []
+    def load_img(self): # tempimg 부름
+        self.template_img = []
         for filename in os.listdir(self.image_folder_path):
             if filename.endswith(".png") or filename.endswith(".jpg"):
                 img_path = os.path.join(self.image_folder_path, filename)
-                self.template_images.append(img_path)
+                self.template_img.append(img_path)
+                
+    def captureFunction(self): # 랜덤으로 모델 부름
+        if self.model_window:
+            self.model_window.close()
+        random_img = random.choice(self.template_img) # 랜덤 검증 이미지 선택
+        self.model_window = ModelWindow(random_img)
+        self.model_window.show()
         
-    def videoFunction(self):
+    def videoFunction(self): # ON
         self.cap=cv.VideoCapture(0,cv.CAP_DSHOW)
         if not self.cap.isOpened(): self.close()
             
@@ -61,41 +71,48 @@ class Video(QMainWindow):
             cv.imshow("display",self.frame)
             cv.waitKey(1)
         
-    def captureFunction(self): 
-        if self.model_window:
-            self.model_window.close()
-        random_template = random.choice(self.template_images) # 랜덤 검증용 이미지 선택
-        self.model_window = ModelWindow(random_template)
-        self.model_window.show()
-        
     def matchFunction(self):       
         if not self.model_window:
-            print("모델 이미지를 먼저 선택하세요.")
+            print("모델 이미지 선택")
             return
         
-        model_img = cv.imread(self.template_images[0]) # 모델 이미지
+        model_img = cv.imread(self.template_img[0]) # 모델 이미지
         gray1=cv.cvtColor(model_img,cv.COLOR_BGR2GRAY)
-        kp1, des1 = sift.detectAndCompute(gray1, None)
+        kp1, des1 = self.sift.detectAndCompute(gray1, None)
 
         gray2=cv.cvtColor(self.frame,cv.COLOR_BGR2GRAY)
-        kp2, des2 = sift.detectAndCompute(gray2, None)
+        kp2, des2 = self.sift.detectAndCompute(gray2, None)
 
         flann_matcher=cv.DescriptorMatcher_create(cv.DescriptorMatcher_FLANNBASED)
 
         knn_match=flann_matcher.knnMatch(des1, des2, 2)
 
-        T=0.7
-        good_match=[]
+        T = 0.8
+        good_match = []
         for nearest1, nearest2 in knn_match:
-            if (nearest1.distance / nearest2.distance) < T:
+            if(nearest1.distance / nearest2.distance) < T:
                 good_match.append(nearest1)
 
-        match_ratio = len(good_match) / len(knn_match)
+        if len(good_match) > 10: # 매칭된 특징점이 충분히 많을 때 조정해야 할듯
+            src_pts = np.float32([kp1[m.queryIdx].pt for m in good_match]).reshape(-1, 1, 2)
+            dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_match]).reshape(-1, 1, 2)
 
-        if match_ratio > 0.1: # 매칭 성공 조건에 따라 수정
-            print("매칭 성공")
+            M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 5.0)
+
+            h, w = model_img.shape[:2]
+            pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
+
+            dst = cv.perspectiveTransform(pts, M)
+
+            self.frame = cv.polylines(self.frame, [np.int32(dst)], True, (255, 0, 0), 3, cv.LINE_AA)
+            cv.imshow("display", self.frame)
+            cv.waitKey(1)
+
+            match_ratio = len(good_match) / len(knn_match)
+            accuracy = match_ratio * 100
+            print(f"정답 : {accuracy}%")
         else:
-            print("매칭 실패")
+            print(f"오답 : {accuracy}%")
         
     def quitFunction(self):
         self.cap.release()
