@@ -88,8 +88,6 @@ class WindowClass(QMainWindow, form_class) :
         self.timer = Timer(interval=10, callback=self.countdown_callback)
         self.timer.start()
         
-        #여기서부터 다시 시작.... 타이머...구현좀....
-    
     def countdown_callback(self, count):
         self.lb_counter.setText("{:.1f}".format(count))
     
