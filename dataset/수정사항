@@ -99,22 +99,39 @@ class Video(QMainWindow):
 
             M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 5.0) # Homography행렬 계산 한 이미지의 특정 좌표를 이미지의 좌표로 변환
 
-            h, w = model_img.shape[:2]
-            pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
+            # h, w = model_img.shape[:2]
+            # pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
 
-            dst = cv.perspectiveTransform(pts, M) # 원근 변환 매트릭스 M사용, 점들의 좌표를 변환하는 함수
+            # dst = cv.perspectiveTransform(pts, M) # 원근 변환 매트릭스 M사용, 점들의 좌표를 변환하는 함수
 
-            self.frame = cv.polylines(self.frame, [np.int32(dst)], True, (255, 0, 0), 3, cv.LINE_AA) # 변환된 모델 이미지 그림
-            cv.imshow("display", self.frame)
-            cv.waitKey(1)
+            # self.frame = cv.polylines(self.frame, [np.int32(dst)], True, (255, 0, 0), 3, cv.LINE_AA) # 변환된 모델 이미지 그림
+            # cv.imshow("display", self.frame)
+            # cv.waitKey(1)
 
-            match_ratio = len(good_match) / len(knn_match) # 특징점 비율 계산
-            accuracy = match_ratio * 100
-            if accuracy >= 70:     
-                print(f"정답 : {accuracy} %")
+            # match_ratio = len(good_match) / len(knn_match) # 특징점 비율 계산
+            # accuracy = match_ratio * 100
+            # if accuracy >= 70:     
+            #     print(f"정답 : {accuracy} %")
+            # else:
+            #     print(f"오답 : {accuracy} %") 
+            if M is not None:  # M 행렬이 None이 아닌지 확인
+                h, w = model_img.shape[:2]
+                pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
+                dst = cv.perspectiveTransform(pts, M) # 원근 변환 매트릭스 M사용, 점들의 좌표를 변환하는 함수
+                self.frame = cv.polylines(self.frame, [np.int32(dst)], True, (255, 0, 0), 3, cv.LINE_AA) # 변환된 모델 이미지 그림
+                cv.imshow("display", self.frame)
+                cv.waitKey(1)
+
+                match_ratio = len(good_match) / len(knn_match) # 특징점 비율 계산
+                accuracy = match_ratio * 100
+                if accuracy >= 70:     
+                    print(f"정답 : {accuracy} %")
+                else:
+                    print(f"오답 : {accuracy} %")
             else:
-                print(f"오답 : {accuracy} %")
-        
+                print("Homography 행렬 형태 올바르지 않음")
+                # 두 이미지 사이의 관계를 설명하는 중요한 행렬 이 행렬은 한 이미지의 점을 다른 이미지의 점을 변화하는데 사용
+                # 이미지들 간의 관계를 설명하기에 충분한 특징점이 없거나 특징점이 충분히 일치하지 않아서 Homography 행렬을 계산할 수 없다는 것을 의미
     def quitFunction(self):
         self.cap.release()
         cv.destroyAllWindows()
