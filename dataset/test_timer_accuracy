@@ -58,12 +58,12 @@ class Video(QMainWindow):
 
         # 타이머와 정확도 라벨
         self.timer_label = QLabel(self)
-        self.timer_label.setGeometry(10, 70, 100, 30)
+        self.timer_label.setGeometry(10, 70, 80, 30)
         self.timer_label.setAlignment(Qt.AlignCenter)
         self.timer_label.setStyleSheet("background-color: white; border: 1px solid black;")
 
         self.accuracy_label = QLabel(self)
-        self.accuracy_label.setGeometry(10, 110, 100, 30)
+        self.accuracy_label.setGeometry(10, 110, 130, 30)
         self.accuracy_label.setAlignment(Qt.AlignCenter)
         self.accuracy_label.setStyleSheet("background-color: white; border: 1px solid black;")
 
@@ -151,7 +151,10 @@ class Video(QMainWindow):
 
                 match_ratio = len(good_match) / len(knn_match)
                 accuracy = match_ratio * 100
-                self.accuracy_label.setText(f"정확도 : {accuracy:.2f}%")
+                if accuracy >= 96:
+                    self.accuracy_label.setText(f"정답 : 정확도 {accuracy:.2f}%")
+                else:
+                    self.accuracy_label.setText(f"오답 : 정확도 {accuracy:.2f}%")
             else:
                 print("Homography 행렬 형태 올바르지 않음")
 
